@@ -49,7 +49,7 @@ payroll_app/
 pip install -r requirements.txt
 ```
 
-# Настройка базы данных PostgreSQL
+## Настройка базы данных PostgreSQL
 1. Установите PostgreSQL (если не установлен)
 2. Создайте базу данных:
 
@@ -58,7 +58,7 @@ CREATE DATABASE payroll_db;
 
 3. Выполните SQL-скрипты из папки database/: через pgAdmin: откройте файлы .sql и выполните их.
 
-# Настройка подключения к БД
+## Настройка подключения к БД
 Откройте server/db_connector.py и укажите ваши параметры подключения:
 DB_CONFIG = {
     'host': 'localhost',
@@ -68,19 +68,19 @@ DB_CONFIG = {
     'port': '5432'
 }
 
-# Запуск сервера
+## Запуск сервера
 ```bash
 cd server
 python app.py
 ```
-# Запуск клиента
+## Запуск клиента
 ```bash
 cd client
 python main.py
 ```
 Откроется графический интерфейс программы.
 
-🛠Технологии
+##🛠Технологии
 
 Backend (Сервер):
 Python 3.x
@@ -99,7 +99,7 @@ FPDF — генерация PDF-отчётов
 PostgreSQL 14+
 Таблицы: Employees, Positions, Departments, Accruals, Deductions
 
-📖 Использование
+##📖 Использование
 
 Поиск сотрудника:
 Введите ID сотрудника (например, 1)
