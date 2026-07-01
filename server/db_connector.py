@@ -1,28 +1,91 @@
 import psycopg2
 
+import time
+
+
 class DBConnector:
-    def __init__(self, host="127.0.0.1", database="payroll_db", user="postgres", password="0000"):
+    def __init__(self, host="127.0.0.1", database="payroll_db",
+                 user="postgres", password="0000", port=5432):
+        self.host = host
+        self.database = database
+        self.user = user
+        self.password = password
+        self.port = port
+        self.conn = None
+        self.cur = None
+        self._connect()
+
+    def _connect(self):
+        """Создаёт новое соединение"""
         try:
+            # Закрываем старое соединение, если есть
+            if self.cur:
+                self.cur.close()
+            if self.conn:
+                self.conn.close()
+
+            # Создаём новое соединение
             self.conn = psycopg2.connect(
-                host=host,
-                database=database,
-                user=user,
-                password=password
+                host=self.host,
+                database=self.database,
+                user=self.user,
+                password=self.password,
+                port=self.port
             )
             self.cur = self.conn.cursor()
+            print("✅ Подключение к БД установлено")
         except Exception as e:
-            print(f"Ошибка подключения к БД: {e}")
+            print(f"❌ Ошибка подключения: {e}")
             raise
 
-    def execute_query(self, query, params=None):
+    def reconnect(self):
+        """Принудительное переподключение"""
+        print("🔄 Переподключение к БД...")
+        self._connect()
+
+    def check_connection(self):
+        """Проверяет, активно ли соединение"""
         try:
-            self.cur.execute(query, params)
+            if self.conn is None or self.cur is None:
+                return False
+            self.cur.execute("SELECT 1")
+            return True
+        except:
+            return False
+
+    def execute_query(self, query, params=None):
+        """Выполняет запрос с автоматическим переподключением"""
+        # Проверяем соединение перед запросом
+        if not self.check_connection():
+            print("⚠️ Соединение потеряно, переподключаемся...")
+            self.reconnect()
+
+        try:
+            if params:
+                self.cur.execute(query, params)
+            else:
+                self.cur.execute(query)
+
             if query.strip().lower().startswith("select"):
                 return self.cur.fetchall()
+
             self.conn.commit()
-        except Exception as e:
-            print(f"Ошибка выполнения запроса: {e}")
-            self.conn.rollback()
+            return None
+        except psycopg2.OperationalError as e:
+            # Если соединение потерялось во время запроса
+            print(f"⚠️ Ошибка соединения: {e}")
+            print("🔄 Пробуем переподключиться...")
+            self.reconnect()
+            # Пробуем ещё раз
+            if params:
+                self.cur.execute(query, params)
+            else:
+                self.cur.execute(query)
+
+            if query.strip().lower().startswith("select"):
+                return self.cur.fetchall()
+
+            self.conn.commit()
             return None
 
     def get_cursor(self):
