@@ -68,9 +68,9 @@ class PayrollAppUI:
         self.accrual_entry = tk.Entry(self.root)
         self.accrual_entry.grid(row=6, column=1, padx=10, pady=5)
         self.accrual_type_var = tk.StringVar(self.root)
-        self.accrual_type_var.set("Зарплата")  # Значение по умолчанию
+        self.accrual_type_var.set("Бонус")  # Значение по умолчанию
         accrual_type_menu = ttk.Combobox(self.root, textvariable=self.accrual_type_var,
-                                         values=["Зарплата", "Премия", "Компенсация"])
+                                         values=["Бонус", "Премия", "Компенсация"])
         accrual_type_menu.grid(row=7, column=1, padx=10, pady=5)
 
         # Удержания
