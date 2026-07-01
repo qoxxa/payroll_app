@@ -46,13 +46,17 @@ class PayrollAppUI:
         tk.Button(self.root, text="Найти", command=self.search_employee).grid(row=0, column=2, padx=1, pady=10)
         tk.Button(self.root, text="Добавить сотрудника", command=self.add_employee_form).grid(row=1, column=0, padx=10,
                                                                                               pady=5)
-        tk.Button(self.root, text="Просмотр сотрудников", command=self.view_employees).grid(row=2, column=0, padx=10,
+        tk.Button(self.root, text="Просмотр сотрудников", command=self.view_employees).grid(row=1, column=1, padx=10,
                                                                                             pady=5)
-        tk.Button(self.root, text="Добавить должность", command=self.add_position_form).grid(row=3, column=0, padx=10,
+        tk.Button(self.root, text="Добавить должность", command=self.add_position_form).grid(row=2, column=0, padx=10,
                                                                                              pady=5)
-        tk.Button(self.root, text="Добавить отдел", command=self.add_department_form).grid(row=4, column=0, padx=10,
+        tk.Button(self.root, text="Просмотр должностей", command=self.view_positions).grid(row=2, column=1, padx=10,
+                                                                                            pady=5)
+        tk.Button(self.root, text="Добавить отдел", command=self.add_department_form).grid(row=3, column=0, padx=10,
                                                                                            pady=5)
-        tk.Button(self.root, text="Генерировать отчет", command=self.generate_report).grid(row=5, column=0, padx=10,
+        tk.Button(self.root, text="Просмотр отделов", command=self.view_departments).grid(row=3, column=1, padx=10,
+                                                                                           pady=5)
+        tk.Button(self.root, text="Генерировать отчет", command=self.generate_report).grid(row=13, column=1, padx=10,
                                                                                            pady=5)
 
         # Поле для отображения результатов поиска
@@ -90,11 +94,11 @@ class PayrollAppUI:
         self.absence_type_menu.grid(row=11, column=1, padx=10, pady=5)
 
         # Кнопка расчета
-        tk.Button(self.root, text="Рассчитать", command=self.calculate_salary).grid(row=13, column=0, columnspan=2,
+        tk.Button(self.root, text="Рассчитать", command=self.calculate_salary).grid(row=13, column=0, columnspan=1,
                                                                                     pady=7)
         # Кнопка экспорта в PDF
-        tk.Button(self.root, text="Экспорт в PDF", command=self.export_to_pdf).grid(row=13, column=1, columnspan=2,
-                                                                                    pady=7)
+        tk.Button(self.root, text="Экспорт в PDF", command=self.export_to_pdf).grid(row=14, column=0, columnspan=1,
+                                                                                    pady=15)
 
     def search_employee(self):
         """Поиск сотрудника по ID"""
@@ -234,6 +238,57 @@ class PayrollAppUI:
                 messagebox.showerror("Ошибка", str(e))
 
         tk.Button(form_window, text="Сохранить", command=save_department).grid(row=1, column=0, columnspan=2, pady=10)
+
+    def view_departments(self):
+        """Окно просмотра отделов"""
+        try:
+            response = requests.get(f"{self.api_url}/departments")
+
+            if response.status_code == 200:
+                departments = response.json()
+                if not departments:
+                    messagebox.showinfo("Информация", "Отделы не найдены.")
+                    return
+
+                form_window = tk.Toplevel(self.root)
+                form_window.title("Список отделов")
+                tree = ttk.Treeview(form_window, columns=("ID", "Название"), show="headings")
+                tree.heading("ID", text="ID")
+                tree.heading("Название", text="Название отдела")
+                tree.pack(padx=10, pady=10)
+
+                for department in departments:
+                    tree.insert("", "end", values=department)
+            else:
+                messagebox.showerror("Ошибка", "Не удалось получить список отделов")
+        except requests.exceptions.ConnectionError:
+            messagebox.showerror("Ошибка", "Не удалось подключиться к серверу!")
+
+    def view_positions(self):
+        """Окно просмотра должностей"""
+        try:
+            response = requests.get(f"{self.api_url}/positions")
+
+            if response.status_code == 200:
+                positions = response.json()
+                if not positions:
+                    messagebox.showinfo("Информация", "Должности не найдены.")
+                    return
+
+                form_window = tk.Toplevel(self.root)
+                form_window.title("Список должностей")
+                tree = ttk.Treeview(form_window, columns=("ID", "Название", "Оклад"), show="headings")
+                tree.heading("ID", text="ID")
+                tree.heading("Название", text="Название")
+                tree.heading("Оклад", text="Оклад (руб.)")
+                tree.pack(padx=10, pady=10)
+
+                for position in positions:
+                    tree.insert("", "end", values=position)
+            else:
+                messagebox.showerror("Ошибка", "Не удалось получить список должностей")
+        except requests.exceptions.ConnectionError:
+            messagebox.showerror("Ошибка", "Не удалось подключиться к серверу!")
 
     def generate_report(self):
         """Окно генерации отчета"""

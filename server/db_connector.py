@@ -48,11 +48,21 @@ class DBConnector:
             (name, base_salary)
         )
 
+    def get_all_positions(self):
+        """Получить все должности"""
+        query = "SELECT Id, Name, BaseSalary FROM positions"
+        return self.execute_query(query)
+
     def add_department(self, name):
         self.execute_query(
             "INSERT INTO Department (Name) VALUES (%s)",
             (name,)
         )
+
+    def get_all_departments(self):
+        """Получить все отделы"""
+        query = "SELECT Id, Name FROM department"
+        return self.execute_query(query)
 
     def generate_payroll_report(self, period):
         result = self.execute_query(
