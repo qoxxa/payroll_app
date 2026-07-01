@@ -1,7 +1,7 @@
 import psycopg2
 
 class DBConnector:
-    def __init__(self, host="localhost", database="payroll_db", user="postgres", password="0000"):
+    def __init__(self, host="127.0.0.1", database="payroll_db", user="postgres", password="0000"):
         try:
             self.conn = psycopg2.connect(
                 host=host,
