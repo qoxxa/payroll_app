@@ -1,8 +1,11 @@
 import tkinter as tk
+import requests
 from tkinter import ttk, messagebox, filedialog
 from fpdf import FPDF
-from server.db_connector import DBConnector
 from decimal import Decimal
+
+API_URL = "http://127.0.0.1:5000/api"
+
 
 class PDF(FPDF):
     def __init__(self):
@@ -27,9 +30,8 @@ class PayrollAppUI:
         # Инициализация основных переменных и элементов интерфейса
         self.root = root
         self.root.title("Система расчета заработной платы")
-        self.db = DBConnector()
+        self.api_url = API_URL
         self.create_main_menu()
-        self.cur = self.db.get_cursor()
         root.geometry("700x650")
 
     def create_main_menu(self):
@@ -42,11 +44,16 @@ class PayrollAppUI:
         self.employee_id_entry = tk.Entry(self.root)
         self.employee_id_entry.grid(row=0, column=1, padx=10, pady=5)
         tk.Button(self.root, text="Найти", command=self.search_employee).grid(row=0, column=2, padx=1, pady=10)
-        tk.Button(self.root, text="Добавить сотрудника", command=self.add_employee_form).grid(row=1, column=0, padx=10, pady=5)
-        tk.Button(self.root, text="Просмотр сотрудников", command=self.view_employees).grid(row=2, column=0, padx=10, pady=5)
-        tk.Button(self.root, text="Добавить должность", command=self.add_position_form).grid(row=3, column=0, padx=10, pady=5)
-        tk.Button(self.root, text="Добавить отдел", command=self.add_department_form).grid(row=4, column=0, padx=10, pady=5)
-        tk.Button(self.root, text="Генерировать отчет", command=self.generate_report).grid(row=5, column=0, padx=10, pady=5)
+        tk.Button(self.root, text="Добавить сотрудника", command=self.add_employee_form).grid(row=1, column=0, padx=10,
+                                                                                              pady=5)
+        tk.Button(self.root, text="Просмотр сотрудников", command=self.view_employees).grid(row=2, column=0, padx=10,
+                                                                                            pady=5)
+        tk.Button(self.root, text="Добавить должность", command=self.add_position_form).grid(row=3, column=0, padx=10,
+                                                                                             pady=5)
+        tk.Button(self.root, text="Добавить отдел", command=self.add_department_form).grid(row=4, column=0, padx=10,
+                                                                                           pady=5)
+        tk.Button(self.root, text="Генерировать отчет", command=self.generate_report).grid(row=5, column=0, padx=10,
+                                                                                           pady=5)
 
         # Поле для отображения результатов поиска
         self.result_label = tk.Label(self.root, text="", wraplength=400)
@@ -58,7 +65,8 @@ class PayrollAppUI:
         self.accrual_entry.grid(row=6, column=1, padx=10, pady=5)
         accrual_type_var = tk.StringVar(self.root)
         accrual_type_var.set("Бонус")  # Значение по умолчанию
-        accrual_type_menu = ttk.Combobox(self.root, textvariable=accrual_type_var, values=["Бонус", "Премия", "Компенсация"])
+        accrual_type_menu = ttk.Combobox(self.root, textvariable=accrual_type_var,
+                                         values=["Бонус", "Премия", "Компенсация"])
         accrual_type_menu.grid(row=7, column=1, padx=10, pady=5)
 
         # Удержания
@@ -67,7 +75,8 @@ class PayrollAppUI:
         self.deduction_entry.grid(row=8, column=1, padx=10, pady=5)
         self.deduction_type_var = tk.StringVar(self.root)
         self.deduction_type_var.set("Налог")  # Значение по умолчанию
-        self.deduction_type_menu = ttk.Combobox(self.root, textvariable=self.deduction_type_var, values=["Налог", "Штраф", "Вычет"])
+        self.deduction_type_menu = ttk.Combobox(self.root, textvariable=self.deduction_type_var,
+                                                values=["Налог", "Штраф", "Вычет"])
         self.deduction_type_menu.grid(row=9, column=1, padx=10, pady=5)
 
         # Отсутствие
@@ -76,11 +85,13 @@ class PayrollAppUI:
         self.absence_entry.grid(row=10, column=1, padx=10, pady=5)
         self.absence_type_var = tk.StringVar(self.root)
         self.absence_type_var.set("Отпуск")  # Значение по умолчанию
-        self.absence_type_menu = ttk.Combobox(self.root, textvariable=self.absence_type_var, values=["Отпуск", "Больничный", "Прогул"])
+        self.absence_type_menu = ttk.Combobox(self.root, textvariable=self.absence_type_var,
+                                              values=["Отпуск", "Больничный", "Прогул"])
         self.absence_type_menu.grid(row=11, column=1, padx=10, pady=5)
 
         # Кнопка расчета
-        tk.Button(self.root, text="Рассчитать", command=self.calculate_salary).grid(row=13, column=0, columnspan=2, pady=7)
+        tk.Button(self.root, text="Рассчитать", command=self.calculate_salary).grid(row=13, column=0, columnspan=2,
+                                                                                    pady=7)
         # Кнопка экспорта в PDF
         tk.Button(self.root, text="Экспорт в PDF", command=self.export_to_pdf).grid(row=13, column=1, columnspan=2,
                                                                                     pady=7)
@@ -89,8 +100,10 @@ class PayrollAppUI:
         """Поиск сотрудника по ID"""
         try:
             employee_id = int(self.employee_id_entry.get())
-            employee_data = self.db.get_employee_data_by_id(employee_id)
-            if employee_data:
+            response = requests.get(f"{self.api_url}/employee/{employee_id}")
+
+            if response.status_code == 200:
+                employee_data = response.json()
                 self.result_label.config(
                     text=f"Сотрудник найден:\n"
                          f"ФИО: {employee_data['full_name']}\n"
@@ -102,6 +115,8 @@ class PayrollAppUI:
                 self.result_label.config(text="Сотрудник с таким ID не найден.")
         except ValueError:
             messagebox.showerror("Ошибка", "Введите корректный ID сотрудника!")
+        except requests.exceptions.ConnectionError:
+            messagebox.showerror("Ошибка", "Не удалось подключиться к серверу!")
 
     def add_employee_form(self):
         """Окно добавления сотрудника"""
@@ -119,9 +134,19 @@ class PayrollAppUI:
 
         def save_employee():
             try:
-                self.db.add_employee(full_name.get(), int(position_id.get()), int(department_id.get()))
-                messagebox.showinfo("Успех", "Сотрудник добавлен!")
-                form_window.destroy()
+                response = requests.post(f"{self.api_url}/employee", json={
+                    'full_name': full_name.get(),
+                    'position_id': int(position_id.get()),
+                    'department_id': int(department_id.get())
+                })
+
+                if response.status_code == 201:
+                    messagebox.showinfo("Успех", "Сотрудник добавлен!")
+                    form_window.destroy()
+                else:
+                    messagebox.showerror("Ошибка", response.json().get('error', 'Неизвестная ошибка'))
+            except requests.exceptions.ConnectionError:
+                messagebox.showerror("Ошибка", "Не удалось подключиться к серверу!")
             except Exception as e:
                 messagebox.showerror("Ошибка", str(e))
 
@@ -129,20 +154,30 @@ class PayrollAppUI:
 
     def view_employees(self):
         """Окно просмотра сотрудников"""
-        employees = self.db.get_all_employees()
-        if not employees:
-            messagebox.showinfo("Информация", "Сотрудники не найдены.")
-            return
-        form_window = tk.Toplevel(self.root)
-        form_window.title("Список сотрудников")
-        tree = ttk.Treeview(form_window, columns=("ID", "ФИО", "Должность", "Отдел"), show="headings")
-        tree.heading("ID", text="ID")
-        tree.heading("ФИО", text="ФИО")
-        tree.heading("Должность", text="Должность")
-        tree.heading("Отдел", text="Отдел")
-        tree.pack(padx=10, pady=10)
-        for employee in employees:
-            tree.insert("", "end", values=employee)
+        try:
+            response = requests.get(f"{self.api_url}/employees")
+
+            if response.status_code == 200:
+                employees = response.json()
+                if not employees:
+                    messagebox.showinfo("Информация", "Сотрудники не найдены.")
+                    return
+
+                form_window = tk.Toplevel(self.root)
+                form_window.title("Список сотрудников")
+                tree = ttk.Treeview(form_window, columns=("ID", "ФИО", "Должность", "Отдел"), show="headings")
+                tree.heading("ID", text="ID")
+                tree.heading("ФИО", text="ФИО")
+                tree.heading("Должность", text="Должность")
+                tree.heading("Отдел", text="Отдел")
+                tree.pack(padx=10, pady=10)
+
+                for employee in employees:
+                    tree.insert("", "end", values=employee)
+            else:
+                messagebox.showerror("Ошибка", "Не удалось получить список сотрудников")
+        except requests.exceptions.ConnectionError:
+            messagebox.showerror("Ошибка", "Не удалось подключиться к серверу!")
 
     def add_position_form(self):
         """Окно добавления должности"""
@@ -157,9 +192,18 @@ class PayrollAppUI:
 
         def save_position():
             try:
-                self.db.add_position(name.get(), float(base_salary.get()))
-                messagebox.showinfo("Успех", "Должность добавлена!")
-                form_window.destroy()
+                response = requests.post(f"{self.api_url}/position", json={
+                    'name': name.get(),
+                    'base_salary': float(base_salary.get())
+                })
+
+                if response.status_code == 201:
+                    messagebox.showinfo("Успех", "Должность добавлена!")
+                    form_window.destroy()
+                else:
+                    messagebox.showerror("Ошибка", response.json().get('error', 'Неизвестная ошибка'))
+            except requests.exceptions.ConnectionError:
+                messagebox.showerror("Ошибка", "Не удалось подключиться к серверу!")
             except Exception as e:
                 messagebox.showerror("Ошибка", str(e))
 
@@ -175,9 +219,17 @@ class PayrollAppUI:
 
         def save_department():
             try:
-                self.db.add_department(name.get())
-                messagebox.showinfo("Успех", "Отдел добавлен!")
-                form_window.destroy()
+                response = requests.post(f"{self.api_url}/department", json={
+                    'name': name.get()
+                })
+
+                if response.status_code == 201:
+                    messagebox.showinfo("Успех", "Отдел добавлен!")
+                    form_window.destroy()
+                else:
+                    messagebox.showerror("Ошибка", response.json().get('error', 'Неизвестная ошибка'))
+            except requests.exceptions.ConnectionError:
+                messagebox.showerror("Ошибка", "Не удалось подключиться к серверу!")
             except Exception as e:
                 messagebox.showerror("Ошибка", str(e))
 
@@ -193,8 +245,15 @@ class PayrollAppUI:
 
         def generate():
             try:
-                report = self.db.generate_payroll_report(period.get())
-                messagebox.showinfo("Отчет", f"Общая зарплата: {report:.2f} руб.")
+                response = requests.get(f"{self.api_url}/report", params={'period': period.get()})
+
+                if response.status_code == 200:
+                    report_data = response.json()
+                    messagebox.showinfo("Отчет", f"Общая зарплата: {report_data['total_salary']:.2f} руб.")
+                else:
+                    messagebox.showerror("Ошибка", response.json().get('error', 'Неизвестная ошибка'))
+            except requests.exceptions.ConnectionError:
+                messagebox.showerror("Ошибка", "Не удалось подключиться к серверу!")
             except Exception as e:
                 messagebox.showerror("Ошибка", str(e))
 
@@ -203,27 +262,28 @@ class PayrollAppUI:
     def calculate_salary(self):
         """Расчет заработной платы с учетом начислений, удержаний и отсутствия."""
         try:
-                # Получение ID сотрудника
-                employee_id = int(self.employee_id_entry.get())
+            # Получение ID сотрудника
+            employee_id = int(self.employee_id_entry.get())
 
-                # Загрузка базового оклада из базы данных (уже Decimal)
-                base_salary = self.load_base_salary(employee_id)
+            # Загрузка базового оклада из базы данных через API
+            base_salary = self.load_base_salary(employee_id)
 
-                # Преобразование остальных значений в Decimal
-                accrual = Decimal(self.accrual_entry.get() or 0)  # Начисления (по умолчанию 0)
-                deduction = Decimal(self.deduction_entry.get() or 0)  # Удержания (по умолчанию 0)
-                absence_days = Decimal(self.absence_entry.get() or 0)  # Дни отсутствия (по умолчанию 0)
+            # Преобразование остальных значений в Decimal
+            accrual = Decimal(self.accrual_entry.get() or 0)  # Начисления (по умолчанию 0)
+            deduction = Decimal(self.deduction_entry.get() or 0)  # Удержания (по умолчанию 0)
+            absence_days = Decimal(self.absence_entry.get() or 0)  # Дни отсутствия (по умолчанию 0)
 
-                # Расчет дневного оклада
-                daily_salary = base_salary / Decimal(30)
+            # Расчет дневного оклада
+            daily_salary = base_salary / Decimal(30)
 
-                # Расчет чистой зарплаты
-                net_salary = base_salary - (daily_salary * absence_days) + accrual - deduction
+            # Расчет чистой зарплаты
+            net_salary = base_salary - (daily_salary * absence_days) + accrual - deduction
 
+            # Получение данных сотрудника через API
+            response = requests.get(f"{self.api_url}/employee/{employee_id}")
+            if response.status_code == 200:
+                employee_data = response.json()
 
-                # Вывод результата
-                employee_id = int(self.employee_id_entry.get())
-                employee_data = self.db.get_employee_data_by_id(employee_id)
                 self.result_label.config(
                     text=f"ФИО: {employee_data['full_name']}\n"
                          f"Чистая зарплата: {net_salary:.2f} руб.\n"
@@ -234,6 +294,7 @@ class PayrollAppUI:
                          f"Удержания: {deduction:.2f} руб.\n"
                          f"Отсутствие: {absence_days} дней"
                 )
+
                 # Сохраняем данные для экспорта в PDF
                 self.pdf_data = {
                     "ФИО": employee_data['full_name'],
@@ -245,8 +306,13 @@ class PayrollAppUI:
                     "Удержания": deduction,
                     "Отсутствие": absence_days,
                 }
+            else:
+                messagebox.showerror("Ошибка", "Не удалось получить данные сотрудника")
+
         except ValueError as e:
-                self.result_label.config(text=f"Ошибка: {str(e)}")
+            self.result_label.config(text=f"Ошибка: {str(e)}")
+        except requests.exceptions.ConnectionError:
+            messagebox.showerror("Ошибка", "Не удалось подключиться к серверу!")
 
     def export_to_pdf(self):
         """Экспорт данных расчета в PDF с выбором папки."""
@@ -287,24 +353,18 @@ class PayrollAppUI:
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось экспортировать PDF: {str(e)}")
 
-
     def load_base_salary(self, employee_id):
-            """
-            Загрузка базового оклада из базы данных по ID сотрудника.
-            """
-            try:
-                # SQL-запрос для получения базового оклада через связь с таблицей positions
-                query = """
-                    SELECT p.BaseSalary
-                    FROM Employee e
-                    JOIN positions p ON e.Position_Id = p.Id
-                    WHERE e.Id = %s
-                """
-                self.cur.execute(query, (employee_id,))
-                result = self.cur.fetchone()
-                if result:
-                    return result[0]  # Возвращаем базовый оклад
-                else:
-                    raise ValueError("Сотрудник с таким ID не найден.")
-            except Exception as e:
-                raise ValueError(f"Ошибка при загрузке базового оклада: {str(e)}")
+        """
+        Загрузка базового оклада через API по ID сотрудника.
+        """
+        try:
+            response = requests.get(f"{self.api_url}/employee/{employee_id}")
+            if response.status_code == 200:
+                employee_data = response.json()
+                return Decimal(employee_data['base_salary'])
+            else:
+                raise ValueError("Сотрудник с таким ID не найден.")
+        except requests.exceptions.ConnectionError:
+            raise ValueError("Не удалось подключиться к серверу!")
+        except Exception as e:
+            raise ValueError(f"Ошибка при загрузке базового оклада: {str(e)}")
