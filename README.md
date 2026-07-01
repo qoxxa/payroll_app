@@ -6,19 +6,21 @@
 и базы данных PostgreSQL.
 
 ## 🏗 Архитектура проекта
+```text
 payroll_app/
-├── client/ # Клиентская часть (GUI)
-│ ├── main.py # Точка входа клиента
-│ ├── ui.py # Графический интерфейс
-│ └── шрифты DejaVuSans
-├── server/ # Серверная часть (API)
-│ ├── app.py # Основной файл сервера
-│ ├── business_logic.py # Бизнес-логика
-│ └── db_connector.py # Работа с БД
-├── database/ # Скрипты БД
-│ ├── create_tables.sql
-│ └── insert_data.sql
-└── requirements.txt # Зависимости Python
+├── client/              # Клиентская часть (GUI)
+│   ├── main.py          # Точка входа клиента
+│   ├── ui.py            # Графический интерфейс
+│   └── шрифты DejaVuSans
+├── server/              # Серверная часть (API)
+│   ├── app.py           # Основной файл сервера
+│   ├── business_logic.py # Бизнес-логика
+│   └── db_connector.py  # Работа с БД
+├── database/            # Скрипты БД
+│   ├── create_tables.sql
+│   └── insert_data.sql
+└── requirements.txt     # Зависимости Python
+```
 
 ## ✨ Возможности
 
