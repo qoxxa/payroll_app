@@ -90,8 +90,10 @@ class PayrollAppUI:
         self.result_text.config(state="disabled")
 
         # Начисления
+        validate_cmd = self.root.register(self.validate_number_input)
+
         tk.Label(self.root, text="Начисления:").grid(row=6, column=0, padx=10, pady=5)
-        self.accrual_entry = tk.Entry(self.root)
+        self.accrual_entry = tk.Entry(self.root, validate="key", validatecommand=(validate_cmd, '%P'))
         self.accrual_entry.grid(row=7, column=1, padx=10, pady=5)
         self.accrual_type_var = tk.StringVar(self.root)
         self.accrual_type_var.set("Бонус")  # Значение по умолчанию
@@ -101,7 +103,7 @@ class PayrollAppUI:
 
         # Удержания
         tk.Label(self.root, text="Удержания:").grid(row=8, column=0, padx=10, pady=5)
-        self.deduction_entry = tk.Entry(self.root)
+        self.deduction_entry = tk.Entry(self.root, validate="key", validatecommand=(validate_cmd, '%P'))
         self.deduction_entry.grid(row=9, column=1, padx=10, pady=5)
         self.deduction_type_var = tk.StringVar(self.root)
         self.deduction_type_var.set("Налог")  # Значение по умолчанию
@@ -111,7 +113,7 @@ class PayrollAppUI:
 
         # Отсутствие
         tk.Label(self.root, text="Отсутствие:").grid(row=10, column=0, padx=10, pady=5)
-        self.absence_entry = tk.Entry(self.root)
+        self.absence_entry = tk.Entry(self.root, validate="key", validatecommand=(validate_cmd, '%P'))
         self.absence_entry.grid(row=11, column=1, padx=10, pady=5)
         self.absence_type_var = tk.StringVar(self.root)
         self.absence_type_var.set("Отпуск")  # Значение по умолчанию
