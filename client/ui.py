@@ -32,7 +32,8 @@ class PayrollAppUI:
         self.root.title("Система расчета заработной платы")
         self.api_url = API_URL
         self.create_main_menu()
-        root.geometry("700x650")
+        root.geometry("800x570")
+        root.minsize(800, 570)  # Минимум 900x600
 
     def create_main_menu(self):
         # Очистка окна
@@ -40,28 +41,48 @@ class PayrollAppUI:
             widget.destroy()
 
         # Кнопки главного меню
-        tk.Label(self.root, text="ID сотрудника:").grid(row=0, column=0, padx=10, pady=80)
+        # Поиск по ID
+        tk.Label(self.root, text="ID сотрудника:").grid(row=0, column=0, padx=10, pady=15)
         self.employee_id_entry = tk.Entry(self.root)
         self.employee_id_entry.grid(row=0, column=1, padx=10, pady=5)
-        tk.Button(self.root, text="Найти", command=self.search_employee).grid(row=0, column=2, padx=1, pady=10)
-        tk.Button(self.root, text="Добавить сотрудника", command=self.add_employee_form).grid(row=1, column=0, padx=10,
-                                                                                              pady=5)
-        tk.Button(self.root, text="Просмотр сотрудников", command=self.view_employees).grid(row=1, column=1, padx=10,
-                                                                                            pady=5)
-        tk.Button(self.root, text="Добавить должность", command=self.add_position_form).grid(row=2, column=0, padx=10,
-                                                                                             pady=5)
-        tk.Button(self.root, text="Просмотр должностей", command=self.view_positions).grid(row=2, column=1, padx=10,
-                                                                                            pady=5)
-        tk.Button(self.root, text="Добавить отдел", command=self.add_department_form).grid(row=3, column=0, padx=10,
-                                                                                           pady=5)
-        tk.Button(self.root, text="Просмотр отделов", command=self.view_departments).grid(row=3, column=1, padx=10,
-                                                                                           pady=5)
+        tk.Button(self.root, text="Найти по ID", command=self.search_employee).grid(row=0, column=2, padx=1, pady=15)
+
+        # Поиск по фамилии
+        tk.Label(self.root, text="ФИО:").grid(row=1, column=0, padx=10, pady=5)
+        self.employee_name_entry = tk.Entry(self.root)
+        self.employee_name_entry.grid(row=1, column=1, padx=10, pady=5)
+        tk.Button(self.root, text="Найти по ФИО", command=self.search_employee_by_name).grid(row=1, column=2,
+                                                                                                 padx=1, pady=5)
+
+        tk.Button(self.root, text="Добавить сотрудника", command=self.add_employee_form).grid(row=2, column=0, padx=10,
+                                                                                              pady=15)
+        tk.Button(self.root, text="Просмотр сотрудников", command=self.view_employees).grid(row=2, column=1, padx=10,
+                                                                                            pady=15)
+        tk.Button(self.root, text="Добавить должность", command=self.add_position_form).grid(row=3, column=0, padx=10,
+                                                                                             pady=15)
+        tk.Button(self.root, text="Просмотр должностей", command=self.view_positions).grid(row=3, column=1, padx=10,
+                                                                                           pady=15)
+        tk.Button(self.root, text="Добавить отдел", command=self.add_department_form).grid(row=4, column=0, padx=10,
+                                                                                           pady=15)
+        tk.Button(self.root, text="Просмотр отделов", command=self.view_departments).grid(row=4, column=1, padx=10,
+                                                                                          pady=15)
         tk.Button(self.root, text="Генерировать отчет", command=self.generate_report).grid(row=13, column=1, padx=10,
-                                                                                           pady=5)
+                                                                                           pady=15)
+        # Кнопка расчета
+        tk.Button(self.root, text="Рассчитать", command=self.calculate_salary).grid(row=13, column=0, columnspan=1,
+                                                                                    pady=15)
+        # Кнопка экспорта в PDF
+        tk.Button(self.root, text="Экспорт в PDF", command=self.export_to_pdf).grid(row=14, column=0, columnspan=1,
+                                                                                    pady=15)
+
+        # Создаём отдельный Frame для окна вывода (справа от кнопок)
+        result_frame = tk.Frame(self.root)
+        result_frame.grid(row=0, column=3, rowspan=5, padx=20, pady=10, sticky="n")
 
         # Поле для отображения результатов поиска
-        self.result_label = tk.Label(self.root, text="", wraplength=400)
-        self.result_label.grid(row=0, column=3, padx=50, pady=10)
+        self.result_text = tk.Text(result_frame, width=45, height=10, wrap="word")
+        self.result_text.pack(fill="both", expand=True)
+        self.result_text.config(state="disabled")
 
         # Начисления
         tk.Label(self.root, text="Начисления:").grid(row=6, column=0, padx=10, pady=5)
@@ -93,13 +114,6 @@ class PayrollAppUI:
                                               values=["Отпуск", "Больничный", "Прогул"])
         self.absence_type_menu.grid(row=11, column=1, padx=10, pady=5)
 
-        # Кнопка расчета
-        tk.Button(self.root, text="Рассчитать", command=self.calculate_salary).grid(row=13, column=0, columnspan=1,
-                                                                                    pady=7)
-        # Кнопка экспорта в PDF
-        tk.Button(self.root, text="Экспорт в PDF", command=self.export_to_pdf).grid(row=14, column=0, columnspan=1,
-                                                                                    pady=15)
-
     def search_employee(self):
         """Поиск сотрудника по ID"""
         try:
@@ -108,53 +122,168 @@ class PayrollAppUI:
 
             if response.status_code == 200:
                 employee_data = response.json()
-                self.result_label.config(
-                    text=f"Сотрудник найден:\n"
-                         f"ФИО: {employee_data['full_name']}\n"
-                         f"Должность: {employee_data['position']}\n"
-                         f"Отдел: {employee_data['department']}\n"
-                         f"Оклад: {employee_data['base_salary']} руб."
-                )
+                # Очищаем и вставляем новый текст
+                self.result_text.config(state="normal")
+                self.result_text.delete("1.0", tk.END)
+                self.result_text.insert(tk.END,
+                                        f"Сотрудник найден:\n"
+                                        f"ФИО: {employee_data['full_name']}\n"
+                                        f"Должность: {employee_data['position']}\n"
+                                        f"Отдел: {employee_data['department']}\n"
+                                        f"Оклад: {employee_data['base_salary']} руб."
+                                        )
+                self.result_text.config(state="disabled")
             else:
-                self.result_label.config(text="Сотрудник с таким ID не найден.")
+                self.result_text.config(state="normal")
+                self.result_text.delete("1.0", tk.END)
+                self.result_text.insert(tk.END, "Сотрудник с таким ID не найден.")
+                self.result_text.config(state="disabled")
         except ValueError:
             messagebox.showerror("Ошибка", "Введите корректный ID сотрудника!")
         except requests.exceptions.ConnectionError:
             messagebox.showerror("Ошибка", "Не удалось подключиться к серверу!")
 
-    def add_employee_form(self):
-        """Окно добавления сотрудника"""
-        form_window = tk.Toplevel(self.root)
-        form_window.title("Добавить сотрудника")
-        tk.Label(form_window, text="ФИО:").grid(row=0, column=0, padx=10, pady=5)
-        full_name = tk.Entry(form_window)
-        full_name.grid(row=0, column=1, padx=10, pady=5)
-        tk.Label(form_window, text="Должность (ID):").grid(row=1, column=0, padx=10, pady=5)
-        position_id = tk.Entry(form_window)
-        position_id.grid(row=1, column=1, padx=10, pady=5)
-        tk.Label(form_window, text="Отдел (ID):").grid(row=2, column=0, padx=10, pady=5)
-        department_id = tk.Entry(form_window)
-        department_id.grid(row=2, column=1, padx=10, pady=5)
+    def search_employee_by_name(self):
+        """Поиск сотрудника по ФИО"""
+        try:
+            name = self.employee_name_entry.get().strip()
+            if not name:
+                messagebox.showerror("Ошибка", "Введите ФИО для поиска!")
+                return
 
-        def save_employee():
-            try:
-                response = requests.post(f"{self.api_url}/employee", json={
-                    'full_name': full_name.get(),
-                    'position_id': int(position_id.get()),
-                    'department_id': int(department_id.get())
-                })
+            response = requests.get(f"{self.api_url}/employee/search", params={'name': name})
 
-                if response.status_code == 201:
-                    messagebox.showinfo("Успех", "Сотрудник добавлен!")
-                    form_window.destroy()
+            if response.status_code == 200:
+                employees = response.json()
+
+                if len(employees) == 1:
+                    # Если найден один сотрудник — показываем как обычно
+                    emp = employees[0]
+                    # ИСПРАВЛЕНО: используем result_text вместо result_label
+                    self.result_text.config(state="normal")
+                    self.result_text.delete("1.0", tk.END)
+                    self.result_text.insert(tk.END,
+                                            f"Сотрудник найден:\n"
+                                            f"ID: {emp['id']}\n"
+                                            f"ФИО: {emp['full_name']}\n"
+                                            f"Должность: {emp['position']}\n"
+                                            f"Отдел: {emp['department']}\n"
+                                            f"Оклад: {emp['base_salary']} руб."
+                                            )
+                    self.result_text.config(state="disabled")
                 else:
-                    messagebox.showerror("Ошибка", response.json().get('error', 'Неизвестная ошибка'))
-            except requests.exceptions.ConnectionError:
-                messagebox.showerror("Ошибка", "Не удалось подключиться к серверу!")
-            except Exception as e:
-                messagebox.showerror("Ошибка", str(e))
+                    # Если найдено несколько — показываем список
+                    result_text = f"Найдено сотрудников: {len(employees)}\n\n"
+                    for emp in employees:
+                        result_text += f"ID: {emp['id']}, {emp['full_name']}, {emp['position']}, {emp['department']}\n"
 
-        tk.Button(form_window, text="Сохранить", command=save_employee).grid(row=3, column=0, columnspan=2, pady=10)
+                    self.result_text.config(state="normal")
+                    self.result_text.delete("1.0", tk.END)
+                    self.result_text.insert(tk.END, result_text)
+                    self.result_text.config(state="disabled")
+            else:
+                # ИСПРАВЛЕНО: текст ошибки (не ID, а ФИО)
+                self.result_text.config(state="normal")
+                self.result_text.delete("1.0", tk.END)
+                self.result_text.insert(tk.END, "Сотрудники не найдены.")
+                self.result_text.config(state="disabled")
+        except requests.exceptions.ConnectionError:
+            messagebox.showerror("Ошибка", "Не удалось подключиться к серверу!")
+        except Exception as e:
+            messagebox.showerror("Ошибка", str(e))
+
+    def add_employee_form(self):
+        """Окно добавления сотрудника с выпадающими списками"""
+        try:
+            # Загружаем список должностей с сервера
+            pos_response = requests.get(f"{self.api_url}/positions")
+            if pos_response.status_code != 200:
+                messagebox.showerror("Ошибка", "Не удалось загрузить должности")
+                return
+            positions = pos_response.json()
+
+            # Загружаем список отделов с сервера
+            dep_response = requests.get(f"{self.api_url}/departments")
+            if dep_response.status_code != 200:
+                messagebox.showerror("Ошибка", "Не удалось загрузить отделы")
+                return
+            departments = dep_response.json()
+
+            # Создаём словари для маппинга {Название: ID}
+            positions_dict = {f"{p[1]} (ID: {p[0]})": p[0] for p in positions}
+            departments_dict = {f"{d[1]} (ID: {d[0]})": d[0] for d in departments}
+
+            # Открываем окно
+            form_window = tk.Toplevel(self.root)
+            form_window.title("Добавить сотрудника")
+
+            # ФИО
+            tk.Label(form_window, text="ФИО:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
+            full_name = tk.Entry(form_window, width=35)
+            full_name.grid(row=0, column=1, padx=10, pady=5)
+
+            # Должность (выпадающий список)
+            tk.Label(form_window, text="Должность:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
+            position_var = tk.StringVar(form_window)
+            position_names = list(positions_dict.keys())
+            position_menu = ttk.Combobox(form_window, textvariable=position_var,
+                                         values=position_names, state="readonly", width=32)
+            position_menu.grid(row=1, column=1, padx=10, pady=5)
+            if position_names:
+                position_menu.current(0)  # Выбираем первый элемент по умолчанию
+
+            # Отдел (выпадающий список)
+            tk.Label(form_window, text="Отдел:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
+            department_var = tk.StringVar(form_window)
+            department_names = list(departments_dict.keys())
+            department_menu = ttk.Combobox(form_window, textvariable=department_var,
+                                           values=department_names, state="readonly", width=32)
+            department_menu.grid(row=2, column=1, padx=10, pady=5)
+            if department_names:
+                department_menu.current(0)  # Выбираем первый элемент по умолчанию
+
+            def save_employee():
+                try:
+                    # Получаем ФИО
+                    name = full_name.get().strip()
+                    if not name:
+                        messagebox.showerror("Ошибка", "Введите ФИО сотрудника!")
+                        return
+
+                    # Получаем ID выбранной должности и отдела
+                    position_id = positions_dict.get(position_var.get())
+                    department_id = departments_dict.get(department_var.get())
+
+                    if not position_id or not department_id:
+                        messagebox.showerror("Ошибка", "Выберите должность и отдел!")
+                        return
+
+                    # Отправляем данные на сервер
+                    response = requests.post(f"{self.api_url}/employee", json={
+                        'full_name': name,
+                        'position_id': position_id,
+                        'department_id': department_id
+                    })
+
+                    if response.status_code == 201:
+                        messagebox.showinfo("Успех", f"Сотрудник '{name}' успешно добавлен!")
+                        form_window.destroy()
+                    else:
+                        error_msg = response.json().get('error', 'Неизвестная ошибка')
+                        messagebox.showerror("Ошибка", f"Не удалось добавить: {error_msg}")
+                except requests.exceptions.ConnectionError:
+                    messagebox.showerror("Ошибка", "Не удалось подключиться к серверу!")
+                except Exception as e:
+                    messagebox.showerror("Ошибка", str(e))
+
+            # Кнопка "Сохранить"
+            tk.Button(form_window, text="Сохранить", command=save_employee,
+                       width=15).grid(row=3, column=0, columnspan=2, pady=15)
+
+        except requests.exceptions.ConnectionError:
+            messagebox.showerror("Ошибка", "Не удалось подключиться к серверу!")
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Ошибка при загрузке формы: {str(e)}")
 
     def view_employees(self):
         """Окно просмотра сотрудников"""

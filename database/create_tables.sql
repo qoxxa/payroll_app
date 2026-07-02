@@ -18,7 +18,7 @@ CREATE TABLE Employee (
     FullName VARCHAR(255) NOT NULL,
     Position_Id INT NOT NULL,
     Department_Id INT NOT NULL,
-    FOREIGN KEY (Position_Id) REFERENCES Position(Id),
+    FOREIGN KEY (Position_Id) REFERENCES Positions(Id),
     FOREIGN KEY (Department_Id) REFERENCES Department(Id)
 );
 

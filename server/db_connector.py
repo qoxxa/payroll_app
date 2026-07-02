@@ -1,7 +1,5 @@
 import psycopg2
 
-import time
-
 
 class DBConnector:
     def __init__(self, host="127.0.0.1", database="payroll_db",
@@ -11,132 +9,54 @@ class DBConnector:
         self.user = user
         self.password = password
         self.port = port
-        self.conn = None
-        self.cur = None
-        self._connect()
 
-    def _connect(self):
-        """Создаёт новое соединение"""
-        try:
-            # Закрываем старое соединение, если есть
-            if self.cur:
-                self.cur.close()
-            if self.conn:
-                self.conn.close()
-
-            # Создаём новое соединение
-            self.conn = psycopg2.connect(
-                host=self.host,
-                database=self.database,
-                user=self.user,
-                password=self.password,
-                port=self.port
-            )
-            self.cur = self.conn.cursor()
-            print("✅ Подключение к БД установлено")
-        except Exception as e:
-            print(f"❌ Ошибка подключения: {e}")
-            raise
-
-    def reconnect(self):
-        """Принудительное переподключение"""
-        print("🔄 Переподключение к БД...")
-        self._connect()
-
-    def check_connection(self):
-        """Проверяет, активно ли соединение"""
-        try:
-            if self.conn is None or self.cur is None:
-                return False
-            self.cur.execute("SELECT 1")
-            return True
-        except:
-            return False
+    def get_connection(self):
+        """Создаёт НОВОЕ соединение каждый раз"""
+        return psycopg2.connect(
+            host=self.host,
+            database=self.database,
+            user=self.user,
+            password=self.password,
+            port=self.port
+        )
 
     def execute_query(self, query, params=None):
-        """Выполняет запрос с автоматическим переподключением"""
-        # Проверяем соединение перед запросом
-        if not self.check_connection():
-            print("⚠️ Соединение потеряно, переподключаемся...")
-            self.reconnect()
-
+        """Создаёт новое соединение для каждого запроса"""
+        conn = None
+        cur = None
         try:
+            # Создаём НОВОЕ соединение
+            conn = self.get_connection()
+            cur = conn.cursor()
+
             if params:
-                self.cur.execute(query, params)
+                cur.execute(query, params)
             else:
-                self.cur.execute(query)
+                cur.execute(query)
 
             if query.strip().lower().startswith("select"):
-                return self.cur.fetchall()
+                result = cur.fetchall()
+                cur.close()
+                conn.close()
+                return result
 
-            self.conn.commit()
-            return None
-        except psycopg2.OperationalError as e:
-            # Если соединение потерялось во время запроса
-            print(f"⚠️ Ошибка соединения: {e}")
-            print("🔄 Пробуем переподключиться...")
-            self.reconnect()
-            # Пробуем ещё раз
-            if params:
-                self.cur.execute(query, params)
-            else:
-                self.cur.execute(query)
-
-            if query.strip().lower().startswith("select"):
-                return self.cur.fetchall()
-
-            self.conn.commit()
+            conn.commit()
+            cur.close()
+            conn.close()
             return None
 
-    def get_cursor(self):
-        return self.cur
+        except Exception as e:
+            print(f"❌ Ошибка SQL: {e}")
+            if cur:
+                cur.close()
+            if conn:
+                conn.close()
+            raise
 
-    def add_employee(self, full_name, position_id, department_id):
-        self.execute_query(
-            "INSERT INTO Employee (FullName, Position_Id, Department_Id) VALUES (%s, %s, %s)",
-            (full_name, position_id, department_id)
-        )
-
-    def get_all_employees(self):
-        return self.execute_query("""
-            SELECT e.Id, e.FullName, p.Name AS Position, d.Name AS Department
-            FROM Employee e
-            JOIN Positions p ON e.Position_Id = p.Id
-            JOIN Department d ON e.Department_Id = d.Id
-        """)
-
-    def add_position(self, name, base_salary):
-        self.execute_query(
-            "INSERT INTO Positions (Name, BaseSalary) VALUES (%s, %s)",
-            (name, base_salary)
-        )
-
-    def get_all_positions(self):
-        """Получить все должности"""
-        query = "SELECT Id, Name, BaseSalary FROM positions"
-        return self.execute_query(query)
-
-    def add_department(self, name):
-        self.execute_query(
-            "INSERT INTO Department (Name) VALUES (%s)",
-            (name,)
-        )
-
-    def get_all_departments(self):
-        """Получить все отделы"""
-        query = "SELECT Id, Name FROM department"
-        return self.execute_query(query)
-
-    def generate_payroll_report(self, period):
-        result = self.execute_query(
-            "SELECT SUM(NetSalary) FROM Salary WHERE Period = %s",
-            (period,)
-        )
-        if result and result[0][0] is not None:
-            return result[0][0]
-        return 0.0
+    # ============ СОТРУДНИКИ ============
 
     def get_employee_data_by_id(self, employee_id):
+        """Получить данные сотрудника по ID"""
         query = """
             SELECT e.Id, e.FullName, p.Name AS Position, d.Name AS Department, p.BaseSalary
             FROM Employee e
@@ -156,8 +76,77 @@ class DBConnector:
             }
         return None
 
+    def search_employee_by_name(self, name):
+        """Поиск сотрудника по фамилии (частичное совпадение, нечувствительно к регистру)"""
+        query = """
+            SELECT e.Id, e.FullName, p.Name AS Position, d.Name AS Department, p.BaseSalary
+            FROM Employee e
+            JOIN Positions p ON e.Position_Id = p.Id
+            JOIN Department d ON e.Department_Id = d.Id
+            WHERE e.FullName ILIKE %s
+            ORDER BY e.Id
+        """
+        # Добавляем % для поиска по частичному совпадению
+        search_pattern = f"%{name}%"
+        return self.execute_query(query, (search_pattern,))
+
+    def get_all_employees(self):
+        """Получить всех сотрудников"""
+        return self.execute_query("""
+            SELECT e.Id, e.FullName, p.Name AS Position, d.Name AS Department
+            FROM Employee e
+            JOIN Positions p ON e.Position_Id = p.Id
+            JOIN Department d ON e.Department_Id = d.Id
+            ORDER BY e.Id
+        """)
+
+    def add_employee(self, full_name, position_id, department_id):
+        """Добавить нового сотрудника"""
+        self.execute_query(
+            "INSERT INTO Employee (FullName, Position_Id, Department_Id) VALUES (%s, %s, %s)",
+            (full_name, position_id, department_id)
+        )
+
+    # ============ ДОЛЖНОСТИ ============
+
+    def get_all_positions(self):
+        """Получить все должности"""
+        return self.execute_query("SELECT Id, Name, BaseSalary FROM Positions ORDER BY Id")
+
+    def add_position(self, name, base_salary):
+        """Добавить должность"""
+        self.execute_query(
+            "INSERT INTO Positions (Name, BaseSalary) VALUES (%s, %s)",
+            (name, base_salary)
+        )
+
+    # ============ ОТДЕЛЫ ============
+
+    def get_all_departments(self):
+        """Получить все отделы"""
+        return self.execute_query("SELECT Id, Name FROM Department ORDER BY Id")
+
+    def add_department(self, name):
+        """Добавить отдел"""
+        self.execute_query(
+            "INSERT INTO Department (Name) VALUES (%s)",
+            (name,)
+        )
+
+    # ============ ОТЧЁТЫ ============
+
+    def generate_payroll_report(self, period):
+        """Сгенерировать отчет по периоду"""
+        result = self.execute_query(
+            "SELECT SUM(NetSalary) FROM Salary WHERE Period = %s",
+            (period,)
+        )
+        if result and result[0][0] is not None:
+            return result[0][0]
+        return 0.0
+
+    # ============ ЗАКРЫТИЕ ============
+
     def close(self):
-        if self.cur:
-            self.cur.close()
-        if self.conn:
-            self.conn.close()
+        """Заглушка, так как соединения создаются и закрываются в execute_query"""
+        pass

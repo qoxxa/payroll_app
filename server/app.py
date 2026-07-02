@@ -24,6 +24,35 @@ def get_employee(employee_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@app.route('/api/employee/search', methods=['GET'])
+def search_employee_by_name():
+    """Поиск сотрудника по фамилии"""
+    try:
+        name = request.args.get('name', '').strip()
+        if not name:
+            return jsonify({'error': 'Введите фамилию для поиска'}), 400
+
+        employees = db.search_employee_by_name(name)
+
+        if not employees:
+            return jsonify({'error': 'Сотрудники не найдены'}), 404
+
+        # Форматируем результат
+        result = []
+        for emp in employees:
+            result.append({
+                'id': emp[0],
+                'full_name': emp[1],
+                'position': emp[2],
+                'department': emp[3],
+                'base_salary': emp[4]
+            })
+
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/employees', methods=['GET'])
 def get_all_employees():
     """Получить всех сотрудников"""
@@ -123,4 +152,4 @@ def generate_report():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    app.run(debug=True, use_reloader=False, host='127.0.0.1', port=5000)

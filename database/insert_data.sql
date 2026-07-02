@@ -1,27 +1,8 @@
-INSERT INTO Positions (Name, BaseSalary)
-VALUES 
-    ('Врач-терапевт участковый', 50000),
-    ('Медицинская сестра', 35000),
-    ('Медицинский регистратор', 40000),
-    ('Врач-хирург', 60000),
-    ('Старшая медицинская сестра', 450000);
+-- ============================================
+-- Тестовые данные для Payroll App
+-- ============================================
 
-INSERT INTO Department (Name)
-VALUES 
-    ('Терапия'),
-    ('Хирургия'),
-    ('Регистратура'),
-    ('Лаборатория'),
-    ('Администрация');
-
-INSERT INTO Employee (FullName, Position_id, Department_Id)
-VALUES
-    ('Иванов Иван Иванович', 11, 6),
-    ('Петрова Алина Сергеевна', 12, 7),
-    ('Сидорова Анна Александровна', 13, 8),
-    ('Кузнецов Дмитрий Владимирович', 14, 9),
-    ('Михайлова Елена Николаевна', 15, 10);
-
+-- Справочники типов (ID: 1, 2, 3...)
 INSERT INTO AccrualType (Name)
 VALUES 
     ('Премия за эффективность'),
@@ -29,64 +10,11 @@ VALUES
     ('Выплата за сверхурочные'),
     ('Бонус за достижения');
 
-INSERT INTO Accrual (AccrualType_Id, Amount, Conditions)
-VALUES 
-    (1, 5000, 'Премия за выполнение плана'),
-    (2, 3000, 'Надбавка за 5 лет стажа'),
-    (3, 2000, 'Оплата за сверхурочные часы'),
-    (4, 1000, 'Премия');
-
-INSERT INTO Deduction (DeductionType_Id, Amount, Reason)
-VALUES 
-    (1, 7000, 'Налог на доходы физических лиц'),
-    (2, 500, 'Штраф'),
-    (3, 2000, 'Прочие удержания');
-
-INSERT INTO WorkSchedule (Employee_Id, WorkDate, HoursWorked)
-VALUES 
-    (68, '2023-10-01', 160), -- Иванов отработал 160 часов в октябре
-    (69, '2023-10-01', 160), -- Петрова отработала 160 часов в октябре
-    (70, '2023-10-01', 150), -- Сидорова отработал 150 часов в октябре
-    (71, '2023-10-01', 170), -- Кузнецов отработала 170 часов в октябре
-    (72, '2023-10-01', 160); -- Михайлова отработал 160 часов в октябре
-
 INSERT INTO DeductionType (Name)
 VALUES 
     ('НДФЛ'),
     ('Штраф'),
     ('Прочие удержания');
-
-INSERT INTO Salary (Employee_Id, Period, BaseAmount, Deduction, Accrual, NetSalary)
-VALUES 
-    (68, '2023-10-01', 50000, 7000, 5000, 48000), -- Иванов: 50000 - 7000 + 5000 = 48000
-    (69, '2023-10-01', 35000, 7000, 3000, 31000), -- Петрова: 35000 - 7000 + 3000 = 31000
-    (70, '2023-10-01', 40000, 7000, 2000, 35000), -- Сидорова: 40000 - 7000 + 2000 = 35000
-    (71, '2023-10-01', 60000, 7000, 1000, 54000), -- Кузнецов: 60000 - 7000 + 1000 = 54000
-    (72, '2023-10-01', 45000, 7000, 3000, 41000); -- Михайлова: 45000 - 7000 + 3000 = 41000
-
-INSERT INTO PayrollReport (Period, TotalDeduction, TotalAccrual, TotalSalary, Salary_Id)
-VALUES 
-    ('2023-10-01', 35000, 15000, 200000, 11), -- Общий отчет за октябрь
-    ('2023-10-01', 35000, 15000, 200000, 12),
-    ('2023-10-01', 35000, 15000, 200000, 13),
-    ('2023-10-01', 35000, 15000, 200000, 14),
-    ('2023-10-01', 35000, 15000, 200000, 15);
-
-INSERT INTO Salary_Accrual (Salary_Id, Accrual_Id, Amount)
-VALUES 
-    (11, 9, 5000), -- Начисление премии Иванову
-    (12, 10, 3000), -- Начисление надбавки за стаж Петровой
-    (13, 11, 2000), -- Начисление за сверхурочные Сидоровой
-    (14, 12, 1000), -- Начисление бонуса Кузнецовой
-    (15, 9, 3000); -- Начисление премии Михайловой
-
-INSERT INTO Salary_Deduction (Salary_Id, Deduction_Id, Amount)
-VALUES 
-    (11, 7, 7000), -- Удержание НДФЛ у Иванова
-    (12, 7, 7000), -- Удержание НДФЛ у Петровой
-    (13, 7, 7000), -- Удержание НДФЛ у Сидоровой
-    (14, 7, 7000), -- Удержание НДФЛ у Кузнецовой
-    (15, 7, 7000); -- Удержание НДФЛ у Михайловой
 
 INSERT INTO AbsenceType (Name)
 VALUES 
@@ -95,10 +23,101 @@ VALUES
     ('Отгул'),
     ('Командировка');
 
+-- Должности (ID: 1, 2, 3...)
+INSERT INTO Positions (Name, BaseSalary)
+VALUES 
+    ('Врач-терапевт участковый', 50000),
+    ('Медицинская сестра', 35000),
+    ('Медицинский регистратор', 40000),
+    ('Врач-хирург', 60000),
+    ('Старшая медицинская сестра', 45000);
+
+-- Отделы (ID: 1, 2, 3...)
+INSERT INTO Department (Name)
+VALUES 
+    ('Терапия'),
+    ('Хирургия'),
+    ('Регистратура'),
+    ('Лаборатория'),
+    ('Администрация');
+
+-- Сотрудники (ID: 1, 2, 3...)
+-- Используем подзапросы для связи с должностями и отделами
+INSERT INTO Employee (FullName, Position_id, Department_Id)
+VALUES
+    ('Иванов Иван Иванович', 
+     (SELECT Id FROM Positions WHERE Name = 'Врач-терапевт участковый'),
+     (SELECT Id FROM Department WHERE Name = 'Терапия')),
+    
+    ('Петрова Алина Сергеевна', 
+     (SELECT Id FROM Positions WHERE Name = 'Медицинская сестра'),
+     (SELECT Id FROM Department WHERE Name = 'Хирургия')),
+    
+    ('Сидорова Анна Александровна', 
+     (SELECT Id FROM Positions WHERE Name = 'Медицинский регистратор'),
+     (SELECT Id FROM Department WHERE Name = 'Регистратура')),
+    
+    ('Кузнецов Дмитрий Владимирович', 
+     (SELECT Id FROM Positions WHERE Name = 'Врач-хирург'),
+     (SELECT Id FROM Department WHERE Name = 'Хирургия')),
+    
+    ('Михайлова Елена Николаевна', 
+     (SELECT Id FROM Positions WHERE Name = 'Старшая медицинская сестра'),
+     (SELECT Id FROM Department WHERE Name = 'Администрация'));
+
+-- Начисления (связь через подзапросы)
+INSERT INTO Accrual (AccrualType_Id, Amount, Conditions)
+VALUES 
+    ((SELECT Id FROM AccrualType WHERE Name = 'Премия за эффективность'), 5000, 'Премия за выполнение плана'),
+    ((SELECT Id FROM AccrualType WHERE Name = 'Надбавка за стаж'), 3000, 'Надбавка за 5 лет стажа'),
+    ((SELECT Id FROM AccrualType WHERE Name = 'Выплата за сверхурочные'), 2000, 'Оплата за сверхурочные часы'),
+    ((SELECT Id FROM AccrualType WHERE Name = 'Бонус за достижения'), 1000, 'Премия');
+
+-- Удержания (связь через подзапросы)
+INSERT INTO Deduction (DeductionType_Id, Amount, Reason)
+VALUES 
+    ((SELECT Id FROM DeductionType WHERE Name = 'НДФЛ'), 7000, 'Налог на доходы физических лиц'),
+    ((SELECT Id FROM DeductionType WHERE Name = 'Штраф'), 500, 'Штраф'),
+    ((SELECT Id FROM DeductionType WHERE Name = 'Прочие удержания'), 2000, 'Прочие удержания');
+
+-- Рабочие часы (связь через подзапросы)
+INSERT INTO WorkSchedule (Employee_Id, WorkDate, HoursWorked)
+VALUES 
+    ((SELECT Id FROM Employee WHERE FullName = 'Иванов Иван Иванович'), '2026-06-01', 160),
+    ((SELECT Id FROM Employee WHERE FullName = 'Петрова Алина Сергеевна'), '2026-06-01', 160),
+    ((SELECT Id FROM Employee WHERE FullName = 'Сидорова Анна Александровна'), '2026-06-01', 150),
+    ((SELECT Id FROM Employee WHERE FullName = 'Кузнецов Дмитрий Владимирович'), '2026-06-01', 170),
+    ((SELECT Id FROM Employee WHERE FullName = 'Михайлова Елена Николаевна'), '2026-06-01', 160);
+
+-- Стаж сотрудников
 INSERT INTO Experience (Employee_Id, Years)
 VALUES 
-    (68, 10), -- Иванов имеет 10 лет стажа
-    (69, 5),  -- Петрова имеет 5 лет стажа
-    (70, 3),  -- Сидорова имеет 3 года стажа
-    (71, 8),  -- Кузнецова имеет 8 лет стажа
-    (72, 12); -- Михайлова имеет 12 лет стажа
+    ((SELECT Id FROM Employee WHERE FullName = 'Иванов Иван Иванович'), 10),
+    ((SELECT Id FROM Employee WHERE FullName = 'Петрова Алина Сергеевна'), 5),
+    ((SELECT Id FROM Employee WHERE FullName = 'Сидорова Анна Александровна'), 3),
+    ((SELECT Id FROM Employee WHERE FullName = 'Кузнецов Дмитрий Владимирович'), 8),
+    ((SELECT Id FROM Employee WHERE FullName = 'Михайлова Елена Николаевна'), 12);
+
+-- ============================================
+-- Сброс sequence для всех таблиц
+-- ============================================
+
+-- ============================================
+-- Сброс sequence для всех таблиц
+-- ============================================
+-- Устанавливаем sequence на MAX(id) + 1, чтобы следующий INSERT получил правильный ID
+
+-- ============================================
+-- Сброс sequence для всех таблиц
+-- ============================================
+
+SELECT setval(pg_get_serial_sequence('AccrualType', 'id'), COALESCE((SELECT MAX(id) FROM AccrualType), 0));
+SELECT setval(pg_get_serial_sequence('DeductionType', 'id'), COALESCE((SELECT MAX(id) FROM DeductionType), 0));
+SELECT setval(pg_get_serial_sequence('AbsenceType', 'id'), COALESCE((SELECT MAX(id) FROM AbsenceType), 0));
+SELECT setval(pg_get_serial_sequence('Positions', 'id'), COALESCE((SELECT MAX(id) FROM Positions), 0));
+SELECT setval(pg_get_serial_sequence('Department', 'id'), COALESCE((SELECT MAX(id) FROM Department), 0));
+SELECT setval(pg_get_serial_sequence('Employee', 'id'), COALESCE((SELECT MAX(id) FROM Employee), 0));
+SELECT setval(pg_get_serial_sequence('Accrual', 'id'), COALESCE((SELECT MAX(id) FROM Accrual), 0));
+SELECT setval(pg_get_serial_sequence('Deduction', 'id'), COALESCE((SELECT MAX(id) FROM Deduction), 0));
+SELECT setval(pg_get_serial_sequence('WorkSchedule', 'id'), COALESCE((SELECT MAX(id) FROM WorkSchedule), 0));
+SELECT setval(pg_get_serial_sequence('Experience', 'id'), COALESCE((SELECT MAX(id) FROM Experience), 0));
