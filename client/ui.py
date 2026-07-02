@@ -31,6 +31,7 @@ class PayrollAppUI:
         self.root = root
         self.root.title("Система расчета заработной платы")
         self.api_url = API_URL
+        self.current_employee_id = None
         self.create_main_menu()
         root.geometry("800x570")
         root.minsize(800, 570)  # Минимум 900x600
@@ -122,7 +123,11 @@ class PayrollAppUI:
 
             if response.status_code == 200:
                 employee_data = response.json()
-                # Очищаем и вставляем новый текст
+
+                # Сохраняем текущий ID
+                self.current_employee_id = employee_id
+
+                # Вывод результата
                 self.result_text.config(state="normal")
                 self.result_text.delete("1.0", tk.END)
                 self.result_text.insert(tk.END,
@@ -138,6 +143,7 @@ class PayrollAppUI:
                 self.result_text.delete("1.0", tk.END)
                 self.result_text.insert(tk.END, "Сотрудник с таким ID не найден.")
                 self.result_text.config(state="disabled")
+                self.current_employee_id = None  # Сбрасываем ID
         except ValueError:
             messagebox.showerror("Ошибка", "Введите корректный ID сотрудника!")
         except requests.exceptions.ConnectionError:
@@ -157,36 +163,33 @@ class PayrollAppUI:
                 employees = response.json()
 
                 if len(employees) == 1:
-                    # Если найден один сотрудник — показываем как обычно
                     emp = employees[0]
-                    # ИСПРАВЛЕНО: используем result_text вместо result_label
-                    self.result_text.config(state="normal")
-                    self.result_text.delete("1.0", tk.END)
-                    self.result_text.insert(tk.END,
-                                            f"Сотрудник найден:\n"
-                                            f"ID: {emp['id']}\n"
-                                            f"ФИО: {emp['full_name']}\n"
-                                            f"Должность: {emp['position']}\n"
-                                            f"Отдел: {emp['department']}\n"
-                                            f"Оклад: {emp['base_salary']} руб."
-                                            )
-                    self.result_text.config(state="disabled")
-                else:
-                    # Если найдено несколько — показываем список
-                    result_text = f"Найдено сотрудников: {len(employees)}\n\n"
-                    for emp in employees:
-                        result_text += f"ID: {emp['id']}, {emp['full_name']}, {emp['position']}, {emp['department']}\n"
+                    # Сохраняем ID найденного сотрудника
+                    self.current_employee_id = emp['id']
 
-                    self.result_text.config(state="normal")
-                    self.result_text.delete("1.0", tk.END)
-                    self.result_text.insert(tk.END, result_text)
-                    self.result_text.config(state="disabled")
+                    result_msg = (f"Сотрудник найден:\n"
+                                  f"ID: {emp['id']}\n"
+                                  f"ФИО: {emp['full_name']}\n"
+                                  f"Должность: {emp['position']}\n"
+                                  f"Отдел: {emp['department']}\n"
+                                  f"Оклад: {emp['base_salary']} руб.")
+                else:
+                    # Если несколько — показываем список, но не сохраняем ID
+                    self.current_employee_id = None
+                    result_msg = f"Найдено сотрудников: {len(employees)}\n\n"
+                    for emp in employees:
+                        result_msg += f"ID: {emp['id']}, {emp['full_name']}, {emp['position']}, {emp['department']}\n"
+
+                self.result_text.config(state="normal")
+                self.result_text.delete("1.0", tk.END)
+                self.result_text.insert(tk.END, result_msg)
+                self.result_text.config(state="disabled")
             else:
-                # ИСПРАВЛЕНО: текст ошибки (не ID, а ФИО)
                 self.result_text.config(state="normal")
                 self.result_text.delete("1.0", tk.END)
                 self.result_text.insert(tk.END, "Сотрудники не найдены.")
                 self.result_text.config(state="disabled")
+                self.current_employee_id = None
         except requests.exceptions.ConnectionError:
             messagebox.showerror("Ошибка", "Не удалось подключиться к серверу!")
         except Exception as e:
@@ -446,16 +449,20 @@ class PayrollAppUI:
     def calculate_salary(self):
         """Расчет заработной платы с учетом начислений, удержаний и отсутствия."""
         try:
-            # Получение ID сотрудника
-            employee_id = int(self.employee_id_entry.get())
+            # Проверяем, найден ли сотрудник
+            if self.current_employee_id is None:
+                messagebox.showerror("Ошибка", "Сначала найдите сотрудника по ID или ФИО!")
+                return
+
+            employee_id = self.current_employee_id
 
             # Загрузка базового оклада из базы данных через API
             base_salary = self.load_base_salary(employee_id)
 
             # Преобразование остальных значений в Decimal
-            accrual = Decimal(self.accrual_entry.get() or 0)  # Начисления (по умолчанию 0)
-            deduction = Decimal(self.deduction_entry.get() or 0)  # Удержания (по умолчанию 0)
-            absence_days = Decimal(self.absence_entry.get() or 0)  # Дни отсутствия (по умолчанию 0)
+            accrual = Decimal(self.accrual_entry.get() or 0)
+            deduction = Decimal(self.deduction_entry.get() or 0)
+            absence_days = Decimal(self.absence_entry.get() or 0)
 
             # Расчет дневного оклада
             daily_salary = base_salary / Decimal(30)
@@ -468,16 +475,19 @@ class PayrollAppUI:
             if response.status_code == 200:
                 employee_data = response.json()
 
-                self.result_label.config(
-                    text=f"ФИО: {employee_data['full_name']}\n"
-                         f"Чистая зарплата: {net_salary:.2f} руб.\n"
-                         f"Должность: {employee_data['position']}\n"
-                         f"Отдел: {employee_data['department']}\n"
-                         f"Базовый оклад: {base_salary:.2f} руб.\n"
-                         f"Начисления: {accrual:.2f} руб.\n"
-                         f"Удержания: {deduction:.2f} руб.\n"
-                         f"Отсутствие: {absence_days} дней"
-                )
+                result_msg = (f"ФИО: {employee_data['full_name']}\n"
+                              f"Чистая зарплата: {net_salary:.2f} руб.\n"
+                              f"Должность: {employee_data['position']}\n"
+                              f"Отдел: {employee_data['department']}\n"
+                              f"Базовый оклад: {base_salary:.2f} руб.\n"
+                              f"Начисления: {accrual:.2f} руб.\n"
+                              f"Удержания: {deduction:.2f} руб.\n"
+                              f"Отсутствие: {absence_days} дней")
+
+                self.result_text.config(state="normal")
+                self.result_text.delete("1.0", tk.END)
+                self.result_text.insert(tk.END, result_msg)
+                self.result_text.config(state="disabled")
 
                 # Сохраняем данные для экспорта в PDF
                 self.pdf_data = {
@@ -491,10 +501,16 @@ class PayrollAppUI:
                     "Отсутствие": absence_days,
                 }
             else:
-                messagebox.showerror("Ошибка", "Не удалось получить данные сотрудника")
+                self.result_text.config(state="normal")
+                self.result_text.delete("1.0", tk.END)
+                self.result_text.insert(tk.END, "Не удалось получить данные сотрудника")
+                self.result_text.config(state="disabled")
 
         except ValueError as e:
-            self.result_label.config(text=f"Ошибка: {str(e)}")
+            self.result_text.config(state="normal")
+            self.result_text.delete("1.0", tk.END)
+            self.result_text.insert(tk.END, f"Ошибка: {str(e)}")
+            self.result_text.config(state="disabled")
         except requests.exceptions.ConnectionError:
             messagebox.showerror("Ошибка", "Не удалось подключиться к серверу!")
 
