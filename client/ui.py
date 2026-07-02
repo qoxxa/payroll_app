@@ -27,14 +27,18 @@ class PDF(FPDF):
 
 class PayrollAppUI:
     def __init__(self, root):
-        # Инициализация основных переменных и элементов интерфейса
         self.root = root
         self.root.title("Система расчета заработной платы")
         self.api_url = API_URL
         self.current_employee_id = None
         self.create_main_menu()
         root.geometry("800x570")
-        root.minsize(800, 570)  # Минимум 900x600
+
+    def validate_number_input(self, P):
+        """Разрешает только цифры, точку и минус"""
+        if P == "" or P.replace('.', '', 1).replace('-', '', 1).isdigit():
+            return True
+        return False
 
     def create_main_menu(self):
         # Очистка окна
@@ -457,13 +461,29 @@ class PayrollAppUI:
 
             employee_id = self.current_employee_id
 
-            # Загрузка базового оклада из базы данных через API
-            base_salary = self.load_base_salary(employee_id)
+            # === НОВАЯ ВАЛИДАЦИЯ ПОЛЕЙ ===
+            accrual_text = self.accrual_entry.get().strip()
+            deduction_text = self.deduction_entry.get().strip()
+            absence_text = self.absence_entry.get().strip()
 
-            # Преобразование остальных значений в Decimal
-            accrual = Decimal(self.accrual_entry.get() or 0)
-            deduction = Decimal(self.deduction_entry.get() or 0)
-            absence_days = Decimal(self.absence_entry.get() or 0)
+            # Проверяем, что поля содержат только числа (или пустые)
+            if accrual_text and not accrual_text.replace('.', '', 1).replace('-', '', 1).isdigit():
+                messagebox.showerror("Ошибка", "Поле 'Начисления' должно содержать только число!")
+                return
+
+            if deduction_text and not deduction_text.replace('.', '', 1).replace('-', '', 1).isdigit():
+                messagebox.showerror("Ошибка", "Поле 'Удержания' должно содержать только число!")
+                return
+
+            if absence_text and not absence_text.replace('.', '', 1).replace('-', '', 1).isdigit():
+                messagebox.showerror("Ошибка", "Поле 'Отсутствие' должно содержать только число!")
+                return
+
+            # Преобразование значений в Decimal
+            base_salary = self.load_base_salary(employee_id)
+            accrual = Decimal(accrual_text or 0)
+            deduction = Decimal(deduction_text or 0)
+            absence_days = Decimal(absence_text or 0)
 
             # Расчет дневного оклада
             daily_salary = base_salary / Decimal(30)
@@ -476,9 +496,9 @@ class PayrollAppUI:
             if response.status_code == 200:
                 employee_data = response.json()
 
-                # === НОВОЕ: Сохраняем в базу данных ===
+                # Сохраняем в базу данных
                 from datetime import date
-                today = date.today().strftime('%Y-%m-%d')  # Формат: 2026-07-02
+                today = date.today().strftime('%Y-%m-%d')
 
                 save_response = requests.post(f"{self.api_url}/salary", json={
                     'employee_id': employee_id,
@@ -527,12 +547,11 @@ class PayrollAppUI:
                 self.result_text.config(state="disabled")
 
         except ValueError as e:
-            self.result_text.config(state="normal")
-            self.result_text.delete("1.0", tk.END)
-            self.result_text.insert(tk.END, f"Ошибка: {str(e)}")
-            self.result_text.config(state="disabled")
+            messagebox.showerror("Ошибка", f"Ошибка в данных: {str(e)}")
         except requests.exceptions.ConnectionError:
             messagebox.showerror("Ошибка", "Не удалось подключиться к серверу!")
+        except Exception as e:
+            messagebox.showerror("Ошибка", str(e))
 
     def export_to_pdf(self):
         """Экспорт данных расчета в PDF с выбором папки."""
