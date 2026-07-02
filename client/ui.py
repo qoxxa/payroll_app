@@ -88,32 +88,32 @@ class PayrollAppUI:
         # Начисления
         tk.Label(self.root, text="Начисления:").grid(row=6, column=0, padx=10, pady=5)
         self.accrual_entry = tk.Entry(self.root)
-        self.accrual_entry.grid(row=6, column=1, padx=10, pady=5)
+        self.accrual_entry.grid(row=7, column=1, padx=10, pady=5)
         self.accrual_type_var = tk.StringVar(self.root)
         self.accrual_type_var.set("Бонус")  # Значение по умолчанию
         accrual_type_menu = ttk.Combobox(self.root, textvariable=self.accrual_type_var,
                                          values=["Бонус", "Премия", "Компенсация"])
-        accrual_type_menu.grid(row=7, column=1, padx=10, pady=5)
+        accrual_type_menu.grid(row=6, column=1, padx=10, pady=5)
 
         # Удержания
         tk.Label(self.root, text="Удержания:").grid(row=8, column=0, padx=10, pady=5)
         self.deduction_entry = tk.Entry(self.root)
-        self.deduction_entry.grid(row=8, column=1, padx=10, pady=5)
+        self.deduction_entry.grid(row=9, column=1, padx=10, pady=5)
         self.deduction_type_var = tk.StringVar(self.root)
         self.deduction_type_var.set("Налог")  # Значение по умолчанию
         self.deduction_type_menu = ttk.Combobox(self.root, textvariable=self.deduction_type_var,
                                                 values=["Налог", "Штраф", "Вычет"])
-        self.deduction_type_menu.grid(row=9, column=1, padx=10, pady=5)
+        self.deduction_type_menu.grid(row=8, column=1, padx=10, pady=5)
 
         # Отсутствие
         tk.Label(self.root, text="Отсутствие:").grid(row=10, column=0, padx=10, pady=5)
         self.absence_entry = tk.Entry(self.root)
-        self.absence_entry.grid(row=10, column=1, padx=10, pady=5)
+        self.absence_entry.grid(row=11, column=1, padx=10, pady=5)
         self.absence_type_var = tk.StringVar(self.root)
         self.absence_type_var.set("Отпуск")  # Значение по умолчанию
         self.absence_type_menu = ttk.Combobox(self.root, textvariable=self.absence_type_var,
                                               values=["Отпуск", "Больничный", "Прогул"])
-        self.absence_type_menu.grid(row=11, column=1, padx=10, pady=5)
+        self.absence_type_menu.grid(row=10, column=1, padx=10, pady=5)
 
     def search_employee(self):
         """Поиск сотрудника по ID"""
