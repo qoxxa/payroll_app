@@ -82,7 +82,6 @@ def add_employee():
 def get_positions():
     """Получить все должности"""
     try:
-        # Добавь этот метод в db_connector.py если нет
         positions = db.get_all_positions()
         return jsonify(positions), 200
     except Exception as e:
@@ -126,7 +125,6 @@ def add_department():
 # ============ API для расчета зарплаты ============
 
 @app.route('/api/calculate', methods=['POST'])
-@app.route('/api/calculate', methods=['POST'])
 def calculate():
     """Рассчитать зарплату"""
     try:
@@ -149,6 +147,24 @@ def generate_report():
         report = db.generate_payroll_report(period)
         return jsonify({'total_salary': report}), 200
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/salary', methods=['POST'])
+def save_salary():
+    """Сохранить запись о зарплате"""
+    try:
+        data = request.json
+        db.save_salary_record(
+            employee_id=data['employee_id'],
+            period=data['period'],
+            base_salary=data['base_salary'],
+            deduction=data['deduction'],
+            accrual=data['accrual'],
+            net_salary=data['net_salary']
+        )
+        return jsonify({'message': 'Зарплата сохранена'}), 201
+    except Exception as e:
+        print(f"❌ Ошибка сохранения: {e}")  # ← Это выведет ошибку в терминал
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':

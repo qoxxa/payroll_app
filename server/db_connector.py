@@ -145,6 +145,14 @@ class DBConnector:
             return result[0][0]
         return 0.0
 
+    def save_salary_record(self, employee_id, period, base_salary, deduction, accrual, net_salary):
+        """Сохранить запись о зарплате в таблицу Salary"""
+        query = """
+            INSERT INTO Salary (Employee_Id, Period, BaseAmount, Deduction, Accrual, NetSalary)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        self.execute_query(query, (employee_id, period, base_salary, deduction, accrual, net_salary))
+
     # ============ ЗАКРЫТИЕ ============
 
     def close(self):

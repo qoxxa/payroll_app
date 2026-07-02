@@ -436,7 +436,8 @@ class PayrollAppUI:
 
                 if response.status_code == 200:
                     report_data = response.json()
-                    messagebox.showinfo("Отчет", f"Общая зарплата: {report_data['total_salary']:.2f} руб.")
+                    total = float(report_data['total_salary'])
+                    messagebox.showinfo("Отчет", f"Общая зарплата: {total:.2f} руб.")
                 else:
                     messagebox.showerror("Ошибка", response.json().get('error', 'Неизвестная ошибка'))
             except requests.exceptions.ConnectionError:
@@ -475,6 +476,23 @@ class PayrollAppUI:
             if response.status_code == 200:
                 employee_data = response.json()
 
+                # === НОВОЕ: Сохраняем в базу данных ===
+                from datetime import date
+                today = date.today().strftime('%Y-%m-%d')  # Формат: 2026-07-02
+
+                save_response = requests.post(f"{self.api_url}/salary", json={
+                    'employee_id': employee_id,
+                    'period': today,
+                    'base_salary': float(base_salary),
+                    'deduction': float(deduction),
+                    'accrual': float(accrual),
+                    'net_salary': float(net_salary)
+                })
+
+                if save_response.status_code != 201:
+                    messagebox.showwarning("Внимание", "Расчёт выполнен, но не удалось сохранить в БД")
+
+                # Вывод результата
                 result_msg = (f"ФИО: {employee_data['full_name']}\n"
                               f"Чистая зарплата: {net_salary:.2f} руб.\n"
                               f"Должность: {employee_data['position']}\n"
@@ -482,7 +500,8 @@ class PayrollAppUI:
                               f"Базовый оклад: {base_salary:.2f} руб.\n"
                               f"Начисления: {accrual:.2f} руб.\n"
                               f"Удержания: {deduction:.2f} руб.\n"
-                              f"Отсутствие: {absence_days} дней")
+                              f"Отсутствие: {absence_days} дней\n"
+                              f"Период: {today}")
 
                 self.result_text.config(state="normal")
                 self.result_text.delete("1.0", tk.END)
@@ -499,6 +518,7 @@ class PayrollAppUI:
                     "Начисления": accrual,
                     "Удержания": deduction,
                     "Отсутствие": absence_days,
+                    "Период": today,
                 }
             else:
                 self.result_text.config(state="normal")
