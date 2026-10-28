@@ -92,7 +92,7 @@ python main.py
 Backend (Сервер):
 Python 3.x
 Flask — веб-фреймворк
-Flask-CORS — поддержка跨域 запросов
+Flask-CORS — поддержка запросов
 PostgreSQL — база данных
 Psycopg2 — драйвер PostgreSQL
 
